@@ -5,20 +5,67 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Socket.io test</title>
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    var socket = io();
-    var el;
-
-    socket.on('time', function (timeString) {
-      el = document.getElementById('server-time')
-      el.innerHTML = 'Server time: ' + timeString;
-    });    
-  </script>  
 </head>
 
 <body>
-  <div id="server-time"></div>
+  <div id="result"></div>
+  <button id="bingo" onclick="bingoHandler()">bingo</button>
+  <div>connection status:<span id="connected"></span></div>
+  <br>
+  <label>Enter user name</label>
+  <input id="player-name" type="text">
+  <button onclick="playerNameSave()">save</button>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let resultEl;
+    let playerName;
+    let lastPingTime;
+
+    socket.on('result', function (winner) {
+      if (!winner) return;
+      resultEl = document.getElementById('result')
+      if (winner === playerName) {
+        message = 'Congrats! You are the winner of the round';
+      } else {
+        message = 'You loose! The winner of the round is ' + winner;
+      }
+      resultEl.innerHTML = message;
+    });
+
+    socket.on('unlock', function () {
+      resultEl = document.getElementById('result');
+      resultEl.innerHTML = "";
+    })
+
+    socket.on('ping', function (time) {
+      lastPingTime = time;
+    })
+
+    resetConnectionStatus();
+
+    function bingoHandler() {
+      if (!playerName) return;
+      socket.emit('bingo', playerName);
+    }
+
+    function playerNameSave() {
+      const input = document.getElementById("player-name");
+      playerName = input.value;
+    }
+
+    function resetConnectionStatus() {
+      setInterval(() => {
+        const now = new Date().getTime();
+        resultEl = document.getElementById('connected');
+        if (now - lastPingTime < 2000) {
+          resultEl.innerHTML = "connected";          
+        } else {
+          resultEl.innerHTML = "disconnected!";
+        }
+      }, 4000)
+    }
+  </script>
 </body>
 
 </html>
